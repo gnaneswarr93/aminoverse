@@ -1,0 +1,26 @@
+.search-bar {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    background-color: #111827; /* Tailwind gray-900 */
+  }
+  
+  .search-bar input {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    border: none;
+    background-color: #374151; /* Tailwind gray-700 */
+    color: #f9fafb;
+  }
+  
+  .search-bar button {
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    background-color: #2563eb; /* Tailwind blue-600 */
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  

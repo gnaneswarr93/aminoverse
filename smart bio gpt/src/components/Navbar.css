@@ -1,0 +1,14 @@
+.navbar {
+    background-color: #1f2937; /* Tailwind gray-800 */
+    padding: 1rem 2rem;
+    color: #f9fafb;           /* Tailwind gray-50 */
+    font-size: 1.25rem;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+  }
+  
