@@ -1,3 +1,4 @@
+// src/pages/Home.jsx
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
@@ -5,6 +6,7 @@ import SearchBar from '../components/SearchBar';
 import ChatSidebar from '../components/ChatSidebar';
 import ChatWindow from '../components/ChatWindow';
 import HeroSection from '../components/HeroSection';
+import { generateChatbotResponse } from '../api/chatbot';  // Correct import from chatbot.js
 import {
   fetchUniProtData,
   fetchAlphaFoldStructure,
@@ -44,130 +46,43 @@ export default function Home() {
 
   const handleSearch = async (query) => {
     if (!query) return;
-
+  
     setMessages((prev) => [...prev, { sender: 'user', text: query }]);
-
+  
     try {
       let responseText = '';
       let apiUsed = '';
-
+  
       console.log('Starting search for:', query);
-
-      if (query.match(/^[OPQ][0-9][A-Z0-9]{3}[0-9]$/i)) {
+  
+      // Attempt to find UniProt ID for the provided protein or gene name
+      const uniProtData = await fetchUniProtData(query);
+  
+      if (uniProtData) {
         apiUsed = 'UniProt';
-        console.log('Fetching UniProt data...');
-        const data = await fetchUniProtData(query);
-        if (data) {
-          setProteinInfo(data);
-          const funcText =
-            data.comments?.find((c) => c.commentType === 'FUNCTION')?.texts?.[0]
-              ?.value || 'No function data available.';
-          responseText = `UniProt Function: ${funcText}`;
-          try {
-            console.log('Fetching AlphaFold structure...');
-            const pdbLink = await fetchAlphaFoldStructure(data.primaryAccession);
-            if (pdbLink) setPdbUrl(pdbLink);
-          } catch (err) {
-            console.warn('No AlphaFold structure available:', err);
-          }
-        } else {
-          responseText = 'No UniProt data found.';
+        setProteinInfo(uniProtData);  // Save the fetched protein data
+        const funcText =
+          uniProtData.comments?.find((c) => c.commentType === 'FUNCTION')?.texts?.[0]?.value ||
+          'No function data available.';
+        responseText = `UniProt Function: ${funcText}`;
+  
+        // Optionally, you can fetch AlphaFold structure here as well if needed
+        try {
+          const pdbLink = await fetchAlphaFoldStructure(uniProtData.primaryAccession);
+          if (pdbLink) setPdbUrl(pdbLink);
+        } catch (err) {
+          console.warn('No AlphaFold structure available:', err);
         }
-      } else if (query.match(/^rs[0-9]+$/i)) {
-        apiUsed = 'ClinVar';
-        console.log('Fetching ClinVar data...');
-        const data = await fetchClinVarData(query);
-        responseText = data
-          ? `ClinVar: Clinical significance - ${data.clinical_significance || 'Unknown'}`
-          : 'No ClinVar data found.';
-      } else if (query.match(/^[0-9]+$/)) {
-        apiUsed = 'NCBI Entrez';
-        console.log('Fetching NCBI Entrez data...');
-        const data = await fetchEntrezGeneData(query);
-        responseText = data
-          ? `NCBI Entrez: ${data.summary || 'No summary available.'}`
-          : 'No Entrez Gene data found.';
       } else {
-        console.log('Fetching multiple APIs...');
-        const [uniprotData, myGeneData, disgenetData, stringData] =
-          await Promise.allSettled([
-            fetchUniProtData(query).then((res) => {
-              console.log('UniProt API result:', res);
-              return res;
-            }),
-            fetchMyGeneData(query).then((res) => {
-              console.log('MyGene API result:', res);
-              return res;
-            }),
-            fetchDisGeNETData(query).then((res) => {
-              console.log('DisGeNET API result:', res);
-              return res;
-            }),
-            fetchStringDBData(query).then((res) => {
-              console.log('STRING-DB API result:', res);
-              return res;
-            }),
-          ]);
-
-        if (uniprotData.status === 'fulfilled' && uniprotData.value) {
-          apiUsed = 'UniProt';
-          setProteinInfo(uniprotData.value);
-          const funcText =
-            uniprotData.value.comments?.find(
-              (c) => c.commentType === 'FUNCTION'
-            )?.texts?.[0]?.value || 'No function data available.';
-          responseText = `UniProt Function: ${funcText}`;
-          try {
-            console.log('Fetching AlphaFold structure for UniProt...');
-            const pdbLink = await fetchAlphaFoldStructure(
-              uniprotData.value.primaryAccession
-            );
-            if (pdbLink) setPdbUrl(pdbLink);
-          } catch (err) {
-            console.warn('No AlphaFold structure available:', err);
-          }
-        } else if (myGeneData.status === 'fulfilled' && myGeneData.value) {
-          apiUsed = 'MyGene.info';
-          responseText = `MyGene.info: Official symbol - ${myGeneData.value.symbol}, Name - ${myGeneData.value.name}`;
-        } else if (
-          disgenetData.status === 'fulfilled' &&
-          disgenetData.value.length > 0
-        ) {
-          apiUsed = 'DisGeNET';
-          responseText = `DisGeNET: Found ${disgenetData.value.length} gene-disease associations.`;
-        } else if (
-          stringData.status === 'fulfilled' &&
-          stringData.value.length > 0
-        ) {
-          apiUsed = 'STRING-DB';
-          responseText = `STRING-DB: Found ${stringData.value.length} protein interactions.`;
-        } else {
-          responseText = 'No data found for your query.';
-        }
-
-        if (uniprotData.status === 'fulfilled' && uniprotData.value) {
-          try {
-            console.log('Fetching ChEMBL data...');
-            const chemblData = await fetchChEMBLData(
-              uniprotData.value.primaryAccession
-            );
-            if (chemblData.length > 0) {
-              responseText += `\nChEMBL: Found ${chemblData.length} bioactivity records.`;
-            }
-          } catch (err) {
-            console.warn('ChEMBL API failed:', err);
-          }
-        }
+        responseText = 'No UniProt data found.';
       }
-
-      console.log('Search completed, response:', responseText);
-      setMessages((prev) => [
-        ...prev,
-        { sender: 'bot', text: responseText },
-      ]);
+  
+      // Update the chat messages with the response
+      setMessages((prev) => [...prev, { sender: 'bot', text: responseText }]);
       setHistory((prev) => [...prev, { prompt: query, response: responseText }]);
+  
+      // Optionally, save the message and response to the history (if needed)
       try {
-        console.log('Saving message to MongoDB Atlas...');
         await saveMessage(query, responseText);
       } catch (err) {
         console.error('Failed to save message:', err);
@@ -178,32 +93,29 @@ export default function Home() {
       setMessages((prev) => [...prev, { sender: 'bot', text: errorMsg }]);
       setHistory((prev) => [...prev, { prompt: query, response: errorMsg }]);
       try {
-        console.log('Saving error message to MongoDB Atlas...');
         await saveMessage(query, errorMsg);
       } catch (err) {
         console.error('Failed to save error message:', err);
       }
     }
   };
+  
+  
 
   const handleSend = async (userInput) => {
     if (!userInput) return;
 
     setMessages((prev) => [...prev, { sender: 'user', text: userInput }]);
-    const botResponse = '🤖 Processing your query...';
+
+    const botResponse = await generateChatbotResponse(userInput);  // Updated function call
+
     setMessages((prev) => [...prev, { sender: 'bot', text: botResponse }]);
-    setHistory((prev) => [
-      ...prev,
-      { prompt: userInput, response: botResponse },
-    ]);
+    setHistory((prev) => [...prev, { prompt: userInput, response: botResponse }]);
     try {
-      console.log('Saving processing message to MongoDB Atlas...');
       await saveMessage(userInput, botResponse);
     } catch (err) {
-      console.error('Failed to save processing message:', err);
+      console.error('Failed to save message:', err);
     }
-
-    await handleSearch(userInput);
   };
 
   return (

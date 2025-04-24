@@ -1,4 +1,6 @@
 import React, { useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+
 
 const ChatWindow = ({ messages, onSend }) => {
   const [input, setInput] = React.useState('');
@@ -19,22 +21,21 @@ const ChatWindow = ({ messages, onSend }) => {
   return (
     <div className="flex flex-col h-full bg-gray-800 rounded-lg shadow-lg">
       <div className="flex-1 p-4 overflow-y-auto">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`mb-4 ${
-              msg.sender === 'user' ? 'text-right' : 'text-left'
-            }`}
-          >
-            <span
-              className={`inline-block p-2 rounded-lg ${
-                msg.sender === 'user' ? 'bg-neon text-black' : 'bg-gray-700 text-white'
-              }`}
-            >
-              {msg.text}
-            </span>
-          </div>
-        ))}
+      {messages.map((msg, index) => (
+  <div
+    key={index}
+    className={`mb-4 ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}
+  >
+    <span
+      className={`inline-block p-2 rounded-lg max-w-xl text-left whitespace-pre-wrap ${
+        msg.sender === 'user' ? 'bg-neon text-black' : 'bg-gray-700 text-white'
+      }`}
+    >
+      <ReactMarkdown>{msg.text}</ReactMarkdown>
+    </span>
+  </div>
+))}
+
         <div ref={messagesEndRef} />
       </div>
       <form onSubmit={handleSubmit} className="p-4 border-t border-gray-700">
