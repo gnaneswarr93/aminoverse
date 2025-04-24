@@ -1,0 +1,19 @@
+/* Tailwind CSS is included via CDN in index.html */
+.chat-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .chat-bubble {
+    padding: 10px;
+    margin: 5px;
+    border-radius: 10px;
+  }
+  .user-bubble {
+    background-color: #4a90e2;
+    color: white;
+    text-align: right;
+  }
+  .bot-bubble {
+    background-color: #f1f1f1;
+  }
